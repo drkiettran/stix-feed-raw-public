@@ -5,7 +5,7 @@ A reference implementation of a STIX 2.1 Indicator Feed Processor written in Jav
 (`com.sun.net.httpserver.HttpServer`), the plain `kafka-clients` library, hand-rolled
 JWT verification, and explicit dependency wiring in `Main`.
 
-This is the framework-free counterpart to [`stix-feed-boot`](https://github.com/drkiettran/stix-feed-boot).
+This is the framework-free counterpart to [`stix-feed-boot-public`](https://github.com/drkiettran/stix-feed-boot-public).
 Both expose the same HTTP API for direct side-by-side comparison.
 
 ---
