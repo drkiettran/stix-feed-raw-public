@@ -1,4 +1,4 @@
-# stix-feed-raw
+# stix-feed-raw-public
 
 A reference implementation of a STIX 2.1 Indicator Feed Processor written in Java 21
 **without an application framework**. Built with the JDK's built-in HTTP server
@@ -60,7 +60,7 @@ export JWT_SECRET="this-is-a-32-byte-secret-for-dev!"
 export KAFKA_BOOTSTRAP_SERVERS="localhost:9094"   # if Kafka via compose
 
 mvn -B clean package
-java -jar target/stix-feed-raw-1.0.0.jar
+java -jar target/stix-feed-raw-public-1.0.0.jar
 ```
 
 ### Run the smoke test
@@ -94,7 +94,7 @@ Three test classes ship out of the box:
 | ---------------------------- | -------- | ---------------------- | ---------------------------------------- |
 | `JWT_SECRET`                 | yes      | —                      | Must be ≥ 32 bytes (HS256)               |
 | `JWT_TTL_SECONDS`            | no       | `3600`                 |                                          |
-| `JWT_ISSUER`                 | no       | `stix-feed-raw`        |                                          |
+| `JWT_ISSUER`                 | no       | `stix-feed-raw-public`        |                                          |
 | `SERVER_PORT`                | no       | `8080`                 |                                          |
 | `THREAD_POOL_SIZE`           | no       | `50`                   | HttpServer executor                      |
 | `KAFKA_BOOTSTRAP_SERVERS`    | no       | `localhost:9092`       |                                          |
