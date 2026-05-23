@@ -1,0 +1,17 @@
+{
+  "type": "indicator",
+  "spec_version": "2.1",
+  "id": "indicator--7c8a3d2f-1e4b-4a8e-9c1d-3f5a8e9b2c1a",
+  "created":  "2026-05-05T14:00:00.000Z",
+  "modified": "2026-05-05T14:00:00.000Z",
+  "name": "Malicious file (SHA-256 hash match)",
+  "description": "Sample STIX 2.1 indicator matching a known-bad file hash",
+  "indicator_types": ["malicious-activity"],
+  "pattern": "[file:hashes.'SHA-256' = 'aec070645fe53ee3b3763059376134f058cc337247c978add178b6ccdfb0019f']",
+  "pattern_type": "stix",
+  "pattern_version": "2.1",
+  "valid_from":  "2026-05-05T14:00:00.000Z",
+  "valid_until": "2026-08-05T14:00:00.000Z",
+  "labels": ["malware", "trojan"],
+  "confidence": 90
+}

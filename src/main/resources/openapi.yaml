@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: STIX 2.1 Indicator Feed Processor (raw)
+  description: |
+    Framework-free reference implementation. Same API contract as `stix-feed-boot`.
+
+    **Auth:** Get a Bearer token via `POST /api/v1/auth/token`, then click **Authorize**
+    above and paste it as `Bearer <token>`.
+
+    **Test users (development):**
+    - `analyst` / `analyst-pass` — roles: analyst, reader (can POST and GET)
+    - `reader`  / `reader-pass`  — roles: reader (can GET only)
+    - `admin`   / `admin-pass`   — roles: analyst, reader
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+    description: Local
+
+tags:
+  - name: auth
+    description: Token issuance
+  - name: health
+    description: Liveness and readiness probes
+  - name: indicators
+    description: STIX 2.1 indicator CRUD and query
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: UP }
+
+  /ready:
+    get:
+      tags: [health]
+      summary: Readiness probe (Kafka + store reachable)
+      responses:
+        "200":
+          description: Ready
+        "503":
+          description: Not ready
+
+  /api/v1/auth/token:
+    post:
+      tags: [auth]
+      summary: Exchange username and password for a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+            examples:
+              analyst:
+                value: { username: analyst, password: analyst-pass }
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/v1/indicators:
+    post:
+      tags: [indicators]
+      summary: Submit a single STIX 2.1 indicator
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Indicator"
+      responses:
+        "201":
+          description: Created and published to Kafka
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Indicator" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/KafkaUnavailable" }
+
+    get:
+      tags: [indicators]
+      summary: Query indicators with filters
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: pattern_type
+          schema: { type: string, enum: [stix, snort, yara, pcre] }
+        - in: query
+          name: valid_from_after
+          schema: { type: string, format: date-time }
+        - in: query
+          name: confidence_gte
+          schema: { type: integer, minimum: 0, maximum: 100 }
+        - in: query
+          name: label
+          schema: { type: array, items: { type: string } }
+          style: form
+          explode: true
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        "200":
+          description: Page of results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:  { type: integer }
+                  limit:  { type: integer }
+                  offset: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Indicator" }
+
+  /api/v1/indicators/batch:
+    post:
+      tags: [indicators]
+      summary: Submit up to 100 indicators in one request
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 100
+              items: { $ref: "#/components/schemas/Indicator" }
+      responses:
+        "201": { description: All accepted }
+        "207": { description: Partial success (some rejected) }
+        "400": { description: All rejected (validation/format) }
+        "503": { $ref: "#/components/responses/KafkaUnavailable" }
+
+  /api/v1/indicators/{id}:
+    get:
+      tags: [indicators]
+      summary: Get one indicator by id
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, example: "indicator--8e2e2d2b-17d4-4cbf-938f-98ee46b3cd3f" }
+      responses:
+        "200":
+          description: Found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Indicator" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TokenRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, example: analyst }
+        password: { type: string, example: analyst-pass }
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string, example: "eyJhbGciOiJIUzI1NiJ9..." }
+        token_type:   { type: string, example: Bearer }
+        expires_in:   { type: integer, example: 3600 }
+        Indicator:
+          type: object
+          required: [type, spec_version, id, created, modified, pattern, pattern_type, valid_from]
+          properties:
+            type:            { type: string, enum: [indicator] }
+            spec_version:    { type: string, enum: ["2.1"] }
+            id:              { type: string, pattern: "^indicator--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }
+            created:         { type: string, format: date-time }
+            modified:        { type: string, format: date-time }
+            name:            { type: string }
+            description:     { type: string }
+            indicator_types:
+              type: array
+              items: { type: string }
+            pattern:         { type: string }
+            pattern_type:    { type: string, enum: [stix, snort, yara, pcre] }
+            pattern_version: { type: string }
+            valid_from:      { type: string, format: date-time }
+            valid_until:     { type: string, format: date-time }
+            labels:
+              type: array
+              items: { type: string }
+            confidence:
+              type: integer
+              minimum: 0
+              maximum: 100
+          example:
+            type: indicator
+            spec_version: "2.1"
+            id: "indicator--7c8a3d2f-1e4b-4a8e-9c1d-3f5a8e9b2c1a"
+            created:    "2026-05-05T14:00:00.000Z"
+            modified:   "2026-05-05T14:00:00.000Z"
+            name: "Malicious file (SHA-256 hash match)"
+            description: "Sample STIX 2.1 indicator matching a known-bad file hash"
+            indicator_types: [malicious-activity]
+            pattern: "[file:hashes.'SHA-256' = 'aec070645fe53ee3b3763059376134f058cc337247c978add178b6ccdfb0019f']"
+            pattern_type: stix
+            pattern_version: "2.1"
+            valid_from:  "2026-05-05T14:00:00.000Z"
+            valid_until: "2026-08-05T14:00:00.000Z"
+            labels: [malware, trojan]
+            confidence: 90
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        status:    { type: integer }
+        error:     { type: string }
+        message:   { type: string }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              issue: { type: string }
+        trace_id:  { type: string }
+
+  responses:
+    BadRequest:
+      description: Malformed request or validation failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: Insufficient role
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: Indicator not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Conflict:
+      description: Indicator with this id already exists
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    KafkaUnavailable:
+      description: Could not publish to Kafka
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }

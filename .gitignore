@@ -1,0 +1,69 @@
+# ── Maven build output ────────────────────────────────────────────
+target/
+build/
+bin/
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# ── Eclipse ───────────────────────────────────────────────────────
+.classpath
+.project
+.settings/
+.metadata/
+*.launch
+.factorypath
+.apt_generated/
+.springBeans
+
+# ── IntelliJ IDEA ─────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ── VS Code ───────────────────────────────────────────────────────
+.vscode/
+
+# ── NetBeans ──────────────────────────────────────────────────────
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# ── OS files ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*~
+
+# ── Logs ──────────────────────────────────────────────────────────
+*.log
+logs/
+hs_err_pid*
+
+# ── Env / secrets ─────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# ── Spring Boot scaffolding ───────────────────────────────────────
+HELP.md
+
+# ── Dependency snapshots / temp ───────────────────────────────────
+deps-*.txt
+*.tmp
+*.swp
+.#*

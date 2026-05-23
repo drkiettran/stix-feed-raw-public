@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>STIX Feed Raw — API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
+  <style>
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .topbar { background: #1f2937; color: #fff; padding: 14px 24px; }
+    .topbar h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .topbar .sub { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>STIX 2.1 Indicator Feed — raw</h1>
+    <div class="sub">Framework-free Java 21 reference. Click <b>Authorize</b> after fetching a token from <code>/api/v1/auth/token</code>.</div>
+  </div>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: '/openapi.yaml',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout',
+        tryItOutEnabled: true,
+        persistAuthorization: true
+      });
+    };
+  </script>
+</body>
+</html>
