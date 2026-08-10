@@ -9,7 +9,7 @@
 
 ## Format note
 
-This record covers eight related decisions (D1–D8) in one document because they must be
+This record covers ten related decisions (D1–D10) in one document because they must be
 made coherently — the identity model constrains the CI tool, the environment topology
 constrains the promotion gates. Each decision section carries its own status and
 alternatives, so any single one can be superseded later by a new ADR without reopening
@@ -25,12 +25,12 @@ built on.
 
 ## In scope
 
-The eight decisions below — and only what blocks S2–S6.
+The ten decisions below — and only what blocks S2–S6.
 
 ## Out of scope (future ADRs if needed)
 
 - Workspace consolidation or multi-workspace strategy changes
-- Testing standards (unit/integration test requirements for pipelines)
+- Testing standards beyond the pipeline gates in D10 (e.g. test-writing requirements, coverage policy details)
 - Observability, alerting, and job monitoring standards
 - Data quality gates and governance tiers for non-production work
 - App-level UX/access design beyond deployment identity
@@ -75,6 +75,10 @@ simple; the template repo carries the standard. Monorepo revisit-able if project
 count grows and drift becomes a problem.
 **Alternatives:** platform monorepo (central control, but cross-team PR contention
 and complex path-filtered CI)
+**Sub-decision:** may one project bundle declare both a job and an app? PROPOSED —
+yes; a bundle can hold both resource types and deploy them together, with shared
+logic packaged once (e.g. a wheel both import). The S2/S4 templates stay separate
+as starting points, but combining them in one repo is supported, not forbidden.
 **Blocks:** S2, S4 (template shape), S3/S5 (onboarding steps)
 **Decision:** _[confirm]_
 
@@ -130,7 +134,10 @@ dependency ticket. Name the owner here: _[owner]_
 **Question:** What triggers each environment's deploy, and what stands between a
 change and prod?
 **Open sub-questions:** who can approve prod deploys; is staging gated or automatic
-(pairs with D5's open question)
+(pairs with D5's open question); do prod *app* deploys need stricter handling than
+jobs — an app deploy restarts a service users may be actively using, while a job
+deploy is invisible until the next run (options: same gate, deploy window, or
+announce-then-deploy)
 **Blocks:** S2, S4 (workflow definition), S3, S5 (SOP promotion steps)
 **Decision:** _[confirm + record approvers]_
 
@@ -144,6 +151,57 @@ scopes (central rotation/audit, one more IAM surface) — note this is runtime
 secrets; CI-to-Databricks auth is D6's concern
 **Blocks:** S2, S4 (template examples), S3, S5 (how users request a secret)
 **Decision:** _[record]_
+
+## D9 — Job/app separation of concerns
+
+**Status:** PROPOSED — jobs write, apps read
+**Question:** What may an app do with data, versus what must remain a job?
+**Rationale:** Jobs own all pipeline processing and table writes (bronze/silver/gold);
+apps are thin consumers that query gold via a SQL warehouse and render. This keeps
+one source of truth, keeps heavy compute auditable and scheduled, and prevents apps
+from becoming shadow pipelines with their own logic variants. If an app needs heavy
+or write-path work, it triggers a *job* (via SDK/API) rather than doing the work
+in-process. Shared business logic lives in a packaged library both can import — the
+job for pipeline runs, the app for light interactive use (e.g. validating a
+user-uploaded sample) — never re-implemented per surface.
+**Alternatives:** apps as full-stack processors (rejected: dual sources of truth,
+unaudited compute, ungoverned writes)
+**Blocks:** S4 (template shows read-only warehouse access as the default), S5 (SOP
+states what app SPs get granted: SELECT on gold, not MODIFY)
+**Decision:** _[confirm]_
+
+## D10 — Pipeline quality & security gates
+
+**Status:** PROPOSED stage list; specific tools OPEN (same selection rule as D1:
+what the org already licenses and security has approved wins)
+**Question:** Which scans and checks run in the pipeline, at which stage, and which
+ones block?
+**Proposed standard (see reference pipeline diagram 07):**
+- *PR, blocking, total < 10 min:* lint/format (ruff) · secrets scan (gitleaks-class)
+  · unit tests + coverage (pytest) · SAST incremental (CxOne/Semgrep/Bandit-class)
+  · SCA on dependencies, block critical CVEs (pip-audit/Snyk-class) · SonarQube
+  new-code quality gate · `bundle validate` all targets · policy-as-code on
+  `databricks.yml` (run_as = SP, required tags, cluster policy, no PATs — this
+  check is how D5–D7 get enforced rather than suggested) · peer review
+- *Merge → dev:* build wheel · deploy · integration verification (job: sample-data
+  run; app: health + smoke test)
+- *Tag → prod:* approval gate · deploy · post-deploy verification · SBOM + release
+  record
+- *Async/nightly, non-blocking:* full SAST on main · license scan · dependency
+  update automation (Renovate-class) · full Sonar analysis
+**Explicitly conditional:** container image scanning (Twistlock/Trivy-class) applies
+only if Databricks Container Services custom images are adopted; standard bundles
+produce wheels, not images — SCA covers the dependency surface. DAST is optional
+and only meaningful if apps are exposed beyond workspace SSO.
+**Governing principle:** blocking PR checks stay under ~10 minutes or they get
+routed around; anything slower runs async and files findings. A gate that is
+evaded is worse than no gate.
+**Alternatives:** scan-everything-blocking (rejected: PR latency drives evasion);
+no security stages (rejected: retiring PATs while letting secrets merge to git is
+incoherent)
+**Blocks:** S2, S4 (workflow stages), S3, S5 (SOPs document what a failed gate
+means and how to fix it)
+**Decision:** _[record tool selections per category + confirm stage list]_
 
 ---
 
@@ -159,7 +217,7 @@ secrets; CI-to-Databricks auth is D6's concern
 
 ## Done criteria for this ADR (sprint exit)
 
-1. D1 and D8 moved from OPEN to decided; D2–D7 confirmed or amended
+1. D1, D8, and D10 tool selections moved from OPEN to decided; D2–D7 and D9 confirmed or amended
 2. Every decision has its alternatives-considered filled in (reviewers: engage with
    these specifically — agreement with what was *rejected* is what makes this stick)
 3. Open sub-questions in D5/D7 answered and recorded

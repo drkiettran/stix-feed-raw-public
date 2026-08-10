@@ -1,0 +1,59 @@
+@startuml 07-reference-pipeline
+title Reference Pipeline - All Stages (jobs + apps, tools per ADR D1/D10)
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #555555
+skinparam activity {
+  BackgroundColor #EEF3FA
+  BorderColor #6B8CB8
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C8A165
+}
+
+partition "PR checks (blocking, target < 10 min)" #F5F9FF {
+  start
+  :Lint + format (ruff);
+  :Secrets scan (gitleaks) - BLOCK on hit;
+  :Unit tests + coverage (pytest);
+  :SAST incremental (CxOne / Semgrep / Bandit);
+  :SCA on requirements (pip-audit / Snyk)\n- BLOCK critical CVEs;
+  :SonarQube quality gate (new code);
+  :databricks bundle validate (all targets);
+  :Policy-as-code on databricks.yml\n(run_as = SP, tags, cluster policy,\nno PATs) - enforces ADR;
+  :Peer review (human);
+}
+
+partition "Merge to main -> dev (auto)" #F1F8E9 {
+  :Build wheel (shared logic, D9);
+  :bundle deploy --target dev\n(SP via OIDC);
+  fork
+    :JOB: trigger run with\nsample data, assert success;
+  fork again
+    :APP: app deploy + start,\nhealth check + smoke test\n(optional: ZAP baseline);
+  end fork
+}
+
+partition "Release tag -> prod (gated)" #FFF8F0 {
+  :Manual approval gate (D7);
+  note right
+    App deploys may need a
+    deploy window - restarts
+    a live service (D7)
+  end note
+  :bundle deploy --target prod;
+  :Post-deploy verification\n(job canary run / app health);
+  :Emit SBOM + release record;
+  stop
+}
+
+legend bottom
+  **Async / nightly (non-blocking):** full SAST scan on main,
+  license scan, Renovate dependency PRs, Sonar full analysis.
+  Slow scans file findings; they never block merges.
+  **Image scan (Twistlock/Trivy):** only if Databricks Container
+  Services custom images are used - otherwise SCA covers it.
+endlegend
+@enduml
