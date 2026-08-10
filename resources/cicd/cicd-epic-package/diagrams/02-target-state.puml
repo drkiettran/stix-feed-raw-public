@@ -1,0 +1,48 @@
+@startuml 02-target-state
+title Target State - One Standard Path for Jobs and Apps
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #555555
+skinparam rectangle {
+  BackgroundColor #EDF7ED
+  BorderColor #4C8C4A
+}
+skinparam cloud {
+  BackgroundColor #EEF3FA
+  BorderColor #6B8CB8
+}
+
+actor "Any Platform User" as U
+actor "Platform Admin" as PA
+
+rectangle "Template repo\n(DABs bundle + CI workflow)" as TPL
+rectangle "Git (PR + review)" as GIT
+rectangle "CI Pipeline\nvalidate -> deploy\n(tool per ADR: GH Actions /\nJenkins-CloudBees / ADO)" as CI
+rectangle "Service Principals\n(per environment)" as SP
+
+cloud "Databricks" {
+  rectangle "dev target" as DEV
+  rectangle "staging target" as STG
+  rectangle "prod target" as PROD #DCEDC8
+}
+
+U --> TPL : clone
+TPL --> GIT : commit
+GIT --> CI : PR merged / tag cut
+CI --> SP : authenticates as
+SP --> DEV : on merge
+SP --> STG : on release branch
+SP --> PROD : on tag + approval gate
+
+PA .[#2E7D32].> GIT : full audit trail
+PA .[#2E7D32].> PROD : knows exactly what runs where
+
+note bottom of CI #F1F8E9
+  **What the epic delivers**
+  * ADR: settled decisions (story 1)
+  * Job + App templates (stories 2, 4)
+  * SOPs users can follow unaided (stories 3, 5)
+  * Proven by external-team pilot (story 6)
+end note
+@enduml

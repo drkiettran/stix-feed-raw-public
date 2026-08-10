@@ -1,0 +1,61 @@
+@startuml 06-path-to-execution
+title Path to Execution - Alignment This Sprint, Build Next Sprint
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #555555
+skinparam activity {
+  BackgroundColor #EEF3FA
+  BorderColor #6B8CB8
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C8A165
+}
+
+|Team (today)|
+start
+:Alignment meeting;
+note right
+  **Three agreements sought**
+  1. Story -> epic (6 child stories)
+  2. This sprint = ADR + refinement
+  3. Named ADR approvers + review date
+end note
+if (Agreements reached?) then (yes)
+  |This sprint|
+  :Draft S1 ADR
+  (branching, targets, identity,
+  secrets, gates, rollback);
+  :CI tool decision
+  (single timeboxed meeting,
+  comparison table = agenda);
+  :File IAM dependency ticket
+  (if provisioning is external);
+  :ADR review + one revision cycle;
+  if (ADR approved?) then (yes)
+    :Refine S2-S6 against ADR;
+    :Re-estimate; confirm pilot team;
+    note right
+      **Sprint exit criteria**
+      * Approved ADR
+      * S2-S6 sprint-ready
+      * Dependency ticket owned
+    end note
+    |Next sprint|
+    :Sprint planning pulls S2 + S4
+    (parallel tracks, two engineers);
+    :Execute per conservative Gantt;
+    stop
+  else (revisions needed)
+    |This sprint|
+    :Address review feedback;
+    detach
+  endif
+else (no / partial)
+  |Team (today)|
+  :Capture objections;
+  :Revise brief; re-present;
+  detach
+endif
+@enduml

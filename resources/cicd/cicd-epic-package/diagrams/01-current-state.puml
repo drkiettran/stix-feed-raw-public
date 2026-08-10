@@ -1,0 +1,48 @@
+@startuml 01-current-state
+title Current State - Deployment Paths (Unstandardized)
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #555555
+skinparam rectangle {
+  BackgroundColor #FDF6EC
+  BorderColor #C8A165
+}
+skinparam cloud {
+  BackgroundColor #EEF3FA
+  BorderColor #6B8CB8
+}
+
+actor "Team A\nEngineer" as A
+actor "Team B\nEngineer" as B
+actor "Team C\nEngineer" as C
+actor "Platform\nAdmin" as PA
+
+rectangle "Manual UI edits\n(no version control)" as UI
+rectangle "Ad-hoc deploy scripts\n(per-team, unreviewed)" as SCRIPTS
+rectangle "Personal access tokens\n(deploys run as individuals)" as PAT
+
+cloud "Databricks Workspace" {
+  rectangle "Jobs\n(unknown provenance)" as JOBS #FBE9E7
+  rectangle "Apps\n(hand-deployed)" as APPS #FBE9E7
+}
+
+A --> UI
+B --> SCRIPTS
+C --> PAT
+UI --> JOBS
+SCRIPTS --> JOBS
+SCRIPTS --> APPS
+PAT --> APPS
+
+PA .[#B71C1C].> JOBS : cannot audit\nwhat changed, when, by whom
+PA .[#B71C1C].> APPS : no rollback path\nno promotion gates
+
+note bottom of PA #FFF3F3
+  **Risks carried today**
+  * Prod changes with no review or history
+  * Deploys tied to individuals (offboarding risk)
+  * Every team reinvents its own process
+  * Incidents are unreproducible
+end note
+@enduml

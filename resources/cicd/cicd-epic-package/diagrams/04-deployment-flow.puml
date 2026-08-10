@@ -1,0 +1,42 @@
+@startuml 04-deployment-flow
+title Target Deployment Flow (what the SOPs will document)
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+skinparam sequenceArrowColor #555555
+skinparam ParticipantBackgroundColor #EEF3FA
+skinparam ParticipantBorderColor #6B8CB8
+skinparam ActorBackgroundColor #FDF6EC
+
+actor "Platform User" as U
+participant "Git repo\n(from template)" as GIT
+participant "CI Pipeline\n(tool selected in S1 ADR)" as CI
+participant "Service Principal" as SP
+participant "Databricks\ndev target" as DEV
+participant "Databricks\nprod target" as PROD
+
+== Develop ==
+U -> GIT : branch + commit bundle changes
+U -> U : local: bundle validate / deploy to dev sandbox
+
+== Pull Request ==
+U -> GIT : open PR
+GIT -> CI : trigger
+CI -> CI : databricks bundle validate
+CI --> GIT : status check (required to merge)
+U -> GIT : peer review + merge
+
+== Deploy to dev ==
+GIT -> CI : merge to main
+CI -> SP : authenticate (OIDC)
+SP -> DEV : bundle deploy --target dev
+CI --> U : deployment result
+
+== Promote to prod ==
+U -> GIT : cut release tag
+GIT -> CI : tag pipeline
+CI -> CI : approval gate (manual)
+CI -> SP : authenticate (prod SP)
+SP -> PROD : bundle deploy --target prod
+CI --> U : release recorded, rollback = redeploy prior tag
+@enduml

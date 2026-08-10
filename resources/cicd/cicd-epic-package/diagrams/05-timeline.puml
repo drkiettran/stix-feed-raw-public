@@ -1,0 +1,37 @@
+@startgantt 05-timeline
+title Conservative Sequencing (~2 sprints with 2 engineers, incl. review cycles and buffer)
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+
+Project starts 2026-08-17
+saturday are closed
+sunday are closed
+
+[S1 ADR: CI/CD standard (incl. review cycles)] as [S1] lasts 4 days and is colored in Gold
+[S2 Job template + pipeline] as [S2] lasts 7 days and is colored in SkyBlue
+[S3 Job SOP] as [S3] lasts 2 days and is colored in SkyBlue
+[S4 App template + pipeline] as [S4] lasts 7 days and is colored in LightSteelBlue
+[S5 App SOP] as [S5] lasts 2 days and is colored in LightSteelBlue
+[S6 Pilot + publish (incl. pilot-team scheduling)] as [S6] lasts 4 days and is colored in LightGreen
+[SP / CI auth provisioning (external dep)] as [DEP] lasts 10 days and is colored in Salmon
+
+[S2] starts at [S1]'s end
+[S4] starts at [S1]'s end
+[S3] starts at [S2]'s end
+[S5] starts at [S4]'s end
+[DEP] starts at [S1]'s end
+[S6] starts at [S3]'s end
+[S6] starts at [S5]'s end
+[S6] starts at [DEP]'s end
+
+note bottom
+  Engineer A: S2 -> S3.  Engineer B: S4 -> S5.  S6 shared.
+  Conservative assumptions baked in:
+  - S1 includes async review + one revision cycle, not just writing
+  - S2/S4 sized for CI auth debugging and permission surprises
+  - S6 waits on DEP and on pilot-team availability
+  - Prod-target verification in S2/S4 may slip until DEP lands
+  Working days only; ~3.5 weeks elapsed -> plan as 2 sprints with slack.
+end note
+@endgantt

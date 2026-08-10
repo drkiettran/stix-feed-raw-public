@@ -1,0 +1,42 @@
+@startuml 03-epic-breakdown
+title Epic Breakdown - Stories, Dependencies, and Parallel Tracks (19 pts)
+
+skinparam backgroundColor white
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #555555
+skinparam rectangle {
+  BorderColor #6B8CB8
+  BackgroundColor #EEF3FA
+}
+
+rectangle "**S1 - CI/CD Standard (ADR)**\n3 pts | spike -> decision record\nBranching, targets, identity,\nsecrets, gates, rollback" as S1 #FFF8E1
+
+rectangle "**S2 - Job Template + Pipeline**\n5 pts | reference DABs bundle,\nCI validate/deploy, dev->prod" as S2
+rectangle "**S3 - Job SOP**\n2 pts | step-by-step doc,\nlinks to template" as S3
+
+rectangle "**S4 - App Template + Pipeline**\n5 pts | app resource, grants,\nsource sync + apps deploy" as S4
+rectangle "**S5 - App SOP**\n2 pts | incl. app identity\n& access model" as S5
+
+rectangle "**S6 - Pilot Validation & Publish**\n2 pts | external team deploys\nusing docs only" as S6 #E8F5E9
+
+rectangle "**Dependency risk (external)**\nService principal provisioning +\nCI auth (OIDC / secrets).\nIf owned by cloud/IAM team,\nsplit into its own ticket." as DEP #FFEBEE
+
+S1 --> S2
+S1 --> S4
+S2 --> S3
+S4 --> S5
+S3 --> S6
+S5 --> S6
+DEP .[#B71C1C].> S2
+DEP .[#B71C1C].> S4
+
+note right of S1
+  **Blocks everything.**
+  Do first; approve as a team.
+end note
+
+note bottom of S6
+  Track A (S2->S3) and Track B (S4->S5)
+  run **in parallel** after S1 lands.
+end note
+@enduml
