@@ -1,0 +1,28 @@
+@startuml
+title The Three Identities - Who Is Acting, When?
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+actor "**1. Developer**\n(your personal login)" as dev #E6F4EA
+rectangle "**2. Deployment SP**\n(one per environment:\nstaging SP, prod SP)" as dsp #FEF7E0
+rectangle "**3. App SP**\n(auto-created PER APP,\nper environment)" as asp #FCE8E6
+
+rectangle "dev target" as t_dev
+rectangle "staging / prod targets" as t_sp
+rectangle "Running Databricks App" as app
+database "Environment catalog\n(tables, volumes, warehouse)" as cat
+
+dev --> t_dev : deploys & runs\n(inner loop only)
+dsp --> t_sp : deploys bundles\n(SOP today, pipeline later)
+t_sp --> app : app is created by deploy...
+asp --> app : ...but RUNS as its own SP
+app --> cat : queries succeed only if\nthe APP SP has grants
+
+note bottom of asp
+  #1 newcomer trap: granting catalog access
+  to yourself or the deployment SP does
+  NOT grant it to the app. The app's own SP
+  needs grants in EVERY environment -
+  "works in dev, 403 in staging" = this.
+end note
+@enduml

@@ -1,0 +1,15 @@
+# A minimal Databricks App. Two things people miss:
+#   1. The app runs as its OWN auto-created service principal —
+#      distinct from whoever deployed it. That SP needs grants
+#      (catalog read, warehouse usage) in EVERY target.
+#   2. Environment config flows in through env vars, so the app
+#      code stays identical across dev/staging/prod.
+resources:
+  apps:
+    sample_app:
+      name: dab-template-sample-app
+      source_code_path: ../src/app
+      config:
+        env:
+          - name: CATALOG
+            value: ${var.catalog}

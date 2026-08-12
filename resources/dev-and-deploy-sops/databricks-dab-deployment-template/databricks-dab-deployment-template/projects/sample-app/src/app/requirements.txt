@@ -1,0 +1,4 @@
+streamlit
+# Shared library wheel, copied into the app source by scripts/build_shared.sh.
+# Databricks Apps install from this file at startup.
+./shared_core-0.1.0-py3-none-any.whl

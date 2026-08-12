@@ -1,0 +1,35 @@
+@startuml
+title App Deployment SOP at a Glance - App-Specific Steps Marked (A)
+start
+partition "Stages 1-2 - Prepare & Validate" {
+  :Same as job SOP - merge, tag,
+  build shared wheel, tests, validate;
+  :(A) Check app.yaml command and that
+  every env var the code reads is declared
+  (a missing var fails at STARTUP, not deploy);
+}
+partition "Stage 3 - Deploy" {
+  :Authenticate as target's deployment SP;
+  :bundle deploy -t target
+  (syncs source only);
+  :(A) bundle run app - START or RESTART
+  ("deployed" and "serving the new version"
+  are two different facts);
+}
+partition "Stage 4 - Verify" {
+  :(A) Poll app URL until HTTP 200
+  (allow a startup window);
+  :(A) Exercise ONE read path that queries
+  the catalog - the step that proves the
+  APP SP's grants work in this environment;
+  :staging - pytest -k app
+  prod - notify app users;
+}
+if (healthy?) then (yes)
+  stop
+else (no)
+  :Rollback = previous tag +
+  Stages 3-4 INCLUDING the restart;
+  stop
+endif
+@enduml

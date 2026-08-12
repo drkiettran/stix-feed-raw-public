@@ -1,0 +1,16 @@
+# Environment-portable job:
+#   1. Catalog arrives as a PARAMETER (${var.catalog}).
+#   2. Logic lives in wheels: this project's own package plus the
+#      shared_core wheel built from libs/ by scripts/build_shared.sh.
+resources:
+  jobs:
+    sample_job:
+      name: sample-job
+      tasks:
+        - task_key: transform
+          python_wheel_task:
+            package_name: sample_job
+            entry_point: run
+            parameters: ["--catalog", "${var.catalog}"]
+          libraries:
+            - whl: ../dist/*.whl

@@ -1,0 +1,40 @@
+# Each project is its OWN bundle. Deploy scope = this folder only:
+# changing another project never touches this one's resources.
+bundle:
+  name: sample-app
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog used by this target
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://REPLACE-with-your-workspace-url
+    variables:
+      catalog: proj_dev
+
+  staging:
+    mode: production
+    workspace:
+      host: https://REPLACE-with-your-workspace-url
+      root_path: /Workspace/.bundle/${bundle.name}/staging
+    variables:
+      catalog: proj_stg
+    run_as:
+      service_principal_name: REPLACE-staging-sp-application-id
+
+  prod:
+    mode: production
+    workspace:
+      host: https://REPLACE-with-your-workspace-url
+      root_path: /Workspace/.bundle/${bundle.name}/prod
+    variables:
+      catalog: proj_prod
+    run_as:
+      service_principal_name: REPLACE-prod-sp-application-id

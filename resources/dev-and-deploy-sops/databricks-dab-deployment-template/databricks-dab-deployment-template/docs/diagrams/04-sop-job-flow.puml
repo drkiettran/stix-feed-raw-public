@@ -1,0 +1,43 @@
+@startuml
+title Job Deployment SOP at a Glance (Phase 1 manual / Phase 2 pipeline)
+start
+partition "Stage 1 - Prepare" {
+  :Merged to main? Note SHA;
+  :Prod only: release tag + approval;
+}
+partition "Stage 2 - Validate" {
+  :./scripts/build_shared.sh;
+  :pytest libs + project tests;
+  if (all green?) then (yes)
+    :bundle validate (staging AND prod);
+  else (no)
+    :STOP - fix first;
+    kill
+  endif
+}
+partition "Stage 3 - Deploy" {
+  :Authenticate as the TARGET's SP
+  (never your own login);
+  :cd projects/<name>
+  bundle deploy -t <target>;
+  :Record SHA, target, deployer;
+}
+partition "Stage 4 - Verify" {
+  if (target?) then (staging)
+    :pytest tests/integration
+    (runs the DEPLOYED job);
+  else (prod)
+    :one verification run + spot-check output;
+  endif
+}
+if (verification passed?) then (yes)
+  stop
+else (no)
+  partition "Stage 5 - Rollback" {
+    :checkout previous tag;
+    :repeat Stages 3-4 from that tag;
+    :log rollback + open fix ticket;
+  }
+  stop
+endif
+@enduml

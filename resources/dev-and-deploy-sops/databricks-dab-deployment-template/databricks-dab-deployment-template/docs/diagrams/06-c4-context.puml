@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title C4 Context - The Delivery System Around This Template
+
+Person(user, "Platform User", "Develops a job or app in a project folder")
+Person(appr, "Release Approver", "Reviews PRs, signs off prod releases")
+
+System_Ext(git, "Git Provider", "Hosts this monorepo: branches, PRs, tags")
+System_Ext(secrets, "Secret Store", "Holds staging/prod SP credentials")
+
+System_Boundary(dbx, "Databricks Platform") {
+    System(dev_t, "dev target", "Per-user sandbox deployments")
+    System(stg_t, "staging target", "Shared integration environment")
+    System(prd_t, "prod target", "Production jobs and apps")
+}
+
+Rel(user, git, "Pushes branches, opens PRs")
+Rel(appr, git, "Approves, merges, tags releases")
+Rel(user, dev_t, "Deploys & runs directly", "CLI, own identity")
+Rel(user, secrets, "Retrieves SP credentials", "per SOP Stage 3")
+Rel(user, stg_t, "Deploys per SOP", "as staging SP (Phase 2: pipeline)")
+Rel(user, prd_t, "Deploys per SOP after approval", "as prod SP (Phase 2: pipeline)")
+@enduml

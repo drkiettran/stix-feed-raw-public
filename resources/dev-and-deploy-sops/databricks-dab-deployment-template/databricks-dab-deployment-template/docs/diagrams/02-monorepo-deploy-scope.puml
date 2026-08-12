@@ -1,0 +1,38 @@
+@startuml
+title Monorepo Layout - Deploy Scope and the Shared Wheel
+skinparam componentStyle rectangle
+
+package "libs/" {
+  [shared_core\n(pure business logic)] as lib
+}
+component "scripts/build_shared.sh" as script #FEF7E0
+
+package "projects/sample-job/  (bundle #1)" as pj {
+  [databricks.yml + resources/] as jdef
+  [src/sample_job\n(entry point only)] as jsrc
+  [dist/shared_core-*.whl] as jwhl
+}
+package "projects/sample-app/  (bundle #2)" as pa {
+  [databricks.yml + resources/] as adef
+  [src/app + requirements.txt] as asrc
+  [shared_core-*.whl\n(inside app source)] as awhl
+}
+
+lib --> script : built as wheel
+script --> jwhl : copies
+script --> awhl : copies
+jsrc ..> lib : imports at runtime
+asrc ..> lib : imports at runtime
+
+cloud "Databricks\nWorkspace" as ws
+jdef --> ws : deploy scope =\nsample-job only
+adef --> ws : deploy scope =\nsample-app only
+
+note bottom of lib
+  Logic used by more than one project
+  is written ONCE here and imported -
+  never copy-pasted, never %run.
+  Changing libs/ affects EVERY consumer:
+  all consumers must re-test.
+end note
+@enduml

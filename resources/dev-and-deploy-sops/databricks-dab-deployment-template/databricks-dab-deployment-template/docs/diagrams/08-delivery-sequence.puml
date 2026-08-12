@@ -1,0 +1,44 @@
+@startuml
+title Sequence - One Change from Dev to Prod (with Rollback Branch)
+actor "Engineer" as eng
+participant "Git (main)" as git
+participant "dev target\n(your identity)" as dev
+participant "staging target\n(staging SP)" as stg
+actor "Approver" as appr
+participant "prod target\n(prod SP)" as prd
+
+group Inner loop - repeat until ready
+  eng -> eng : edit code, pytest (unit)
+  eng -> dev : bundle deploy -t dev / bundle run
+  dev --> eng : run result, iterate
+end
+
+eng -> git : open PR (checks: tests + validate all targets)
+appr -> git : approve, merge to main
+
+group SOP Stages 2-4 - staging  [identity switch: engineer -> staging SP]
+  eng -> eng : build_shared.sh, tests, validate
+  eng -> stg : bundle deploy -t staging
+  eng -> stg : run integration tests (deployed job / app probe)
+  stg --> eng : all green
+end
+
+eng -> appr : request prod release
+appr -> git : tag vX.Y.Z + written approval
+
+group SOP Stages 3-4 - prod  [identity switch: -> prod SP]
+  eng -> prd : bundle deploy -t prod
+  eng -> prd : verification run / health + read-path probe
+end
+
+alt verification passes
+  prd --> eng : healthy
+  eng -> git : record in deployment log
+else verification fails
+  prd --> eng : failure
+  eng -> git : checkout PREVIOUS tag
+  eng -> prd : same deploy path, older source\n(rebuild wheel, deploy, restart, verify)
+  prd --> eng : healthy on prior version
+  eng -> git : log rollback + open fix ticket
+end
+@enduml

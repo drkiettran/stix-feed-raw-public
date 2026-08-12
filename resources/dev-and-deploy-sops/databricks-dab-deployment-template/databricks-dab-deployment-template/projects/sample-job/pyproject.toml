@@ -1,0 +1,14 @@
+[project]
+name = "sample_job"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = ["pytest", "databricks-sdk"]
+
+[project.entry-points."packages"]
+run = "sample_job.main:run"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

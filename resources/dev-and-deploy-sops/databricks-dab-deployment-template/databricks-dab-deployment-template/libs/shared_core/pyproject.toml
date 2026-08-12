@@ -1,0 +1,15 @@
+[project]
+name = "shared_core"
+version = "0.1.0"
+description = "Shared business logic used by all projects (jobs and apps)."
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

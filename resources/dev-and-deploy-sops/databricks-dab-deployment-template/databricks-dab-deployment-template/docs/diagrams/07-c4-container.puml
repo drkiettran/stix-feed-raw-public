@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title C4 Container - Inside One Deployed Target (repeated per environment)
+
+Person(deployer, "Deploying Identity", "You (dev) / environment SP (staging, prod)")
+
+System_Boundary(ws, "Databricks Workspace") {
+    Container(files, "Bundle Workspace Files", "Workspace filesystem", "Synced project source under .bundle/<name>/<target>")
+    Container(job, "Lakeflow Job", "Orchestration", "Defined in resources/; wheels attached from dist/")
+    Container(app, "Databricks App", "Managed web app", "Runs as its OWN app SP; installs requirements.txt at startup")
+    Container(compute, "Job Compute", "Serverless / job cluster", "Ephemeral, launched per run")
+}
+
+System_Boundary(uc, "Unity Catalog") {
+    ContainerDb(cat, "Environment Catalog", "proj_dev / proj_stg / proj_prod", "Schemas, tables, volumes for this target only")
+}
+System_Ext(storage, "Cloud Object Storage", "External locations backing the catalog")
+
+Rel(deployer, files, "bundle deploy: sync source, reconcile resources")
+Rel(job, compute, "Launches per run")
+Rel(compute, cat, "Reads/writes via the ${var.catalog} parameter")
+Rel(app, cat, "Queries - succeeds only with APP SP grants")
+Rel(cat, storage, "Backed by")
+@enduml

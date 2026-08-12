@@ -1,0 +1,23 @@
+@startuml
+title The Core Mental Model - One Bundle, Many Targets
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+rectangle "Project folder = **Bundle**\n(databricks.yml + resources/ + src/)\n\nDescribes WHAT to deploy.\nNever mentions a specific\nenvironment in code." as bundle #E8F0FE
+
+rectangle "Target: **dev**\ncatalog = proj_dev\nidentity = you\nmode = development\n(names prefixed, schedules paused)" as dev #E6F4EA
+rectangle "Target: **staging**\ncatalog = proj_stg\nidentity = staging SP\nmode = production" as stg #FEF7E0
+rectangle "Target: **prod**\ncatalog = proj_prod\nidentity = prod SP\nmode = production" as prd #FCE8E6
+
+bundle --> dev : bundle deploy -t dev
+bundle --> stg : bundle deploy -t staging
+bundle --> prd : bundle deploy -t prod
+
+note bottom of bundle
+  A **target** answers WHERE and AS WHOM.
+  The same unchanged source deploys everywhere;
+  only ${var.catalog} and the identity differ.
+  "Promoting to prod" = deploying the same
+  bundle with a different -t flag.
+end note
+@enduml
