@@ -16,6 +16,8 @@ An SOP is a promise that people will follow the steps; a pipeline is a system th
 
 ```text
 databricks-dab-deployment-template/
+├── README.md                   # start here
+├── SETUP.md                    # publish checklist: every REPLACE- placeholder
 ├── libs/
 │   └── shared_core/            # shared business logic — built as a wheel
 │       ├── pyproject.toml
@@ -26,21 +28,28 @@ databricks-dab-deployment-template/
 │   │   ├── databricks.yml      #   own targets, own deploy scope
 │   │   ├── resources/          #   Lakeflow Job definition
 │   │   ├── src/sample_job/     #   project glue: entry point only
-│   │   └── tests/              #   unit (glue) + integration (deployed)
+│   │   └── tests/              #   unit (glue) + integration (deployed job)
 │   └── sample-app/
 │       ├── databricks.yml
 │       ├── resources/          #   Databricks App definition
-│       └── src/app/            #   app code + app.yaml + requirements.txt
+│       ├── src/app/            #   app.py (glue) + helpers.py (testable logic)
+│       │                       #   + app.yaml + requirements.txt
+│       └── tests/              #   unit (helpers) + integration (app smoke)
 ├── scripts/
 │   └── build_shared.sh         # builds shared_core wheel → consuming projects
-└── docs/                       # deployment SOPs
+└── docs/
+    ├── SOP-job-deployment.md   # stage-by-stage, with diagrams + walkthroughs
+    ├── SOP-app-deployment.md
+    ├── architecture.md         # C4 views + dev-to-prod sequence (incl. rollback)
+    ├── deployment-log.md       # Stage 3 record for every staging/prod deploy
+    └── diagrams/               # all .puml sources + rendered .svg + regen guide
 ```
 
 Three rules carry the design:
 
 **One bundle per project folder.** Each project under `projects/` has its own `databricks.yml`, so its deploy scope is exactly itself: deploying `sample-job` can never touch `sample-app`'s resources, and (in Phase 2) a PR that changes only one project triggers only that project's pipeline. Adding a workload = copying a project folder and renaming the bundle.
 
-**Shared logic lives in `libs/`, consumed as a wheel.** Business logic used by more than one surface is written once in `shared_core`, unit-tested where it lives, built by `scripts/build_shared.sh`, and *imported* by jobs (via task `libraries`) and apps (via `requirements.txt`) alike. Nothing is copy-pasted between projects, and nothing is `%run` from a notebook.
+**Shared logic lives in `libs/`, consumed as a wheel.** Business logic used by more than one surface is written once in `shared_core`, unit-tested where it lives, built by `scripts/build_shared.sh`, and *imported* by jobs (via task `libraries`) and apps (via `requirements.txt`) alike. Nothing is copy-pasted between projects, and nothing is `%run` from a notebook. The same discipline applies inside apps: `app.py` stays untestable UI glue, while logic worth asserting lives in `helpers.py` (app-local) or `shared_core` (shared) — both unit-tested.
 
 **Nothing hardcodes an environment.** The catalog name flows in as a job parameter or app env var, resolved per-target by the `${var.catalog}` variable in each bundle. Environments are isolated at the **Unity Catalog catalog level** (`proj_dev` / `proj_stg` / `proj_prod`); the workspace is shared.
 
@@ -53,6 +62,8 @@ Three rules carry the design:
 For the zoomed-out system views — C4 context, C4 container, and a full dev-to-prod sequence including rollback — see [docs/architecture.md](docs/architecture.md).
 
 ## Quick start (dev)
+
+> First time in this repo? Run through [SETUP.md](SETUP.md) once — the bundles contain `REPLACE-` placeholders (workspace URL, service principal IDs) that must be filled before anything deploys.
 
 ```bash
 databricks auth login --host https://<workspace-url>
