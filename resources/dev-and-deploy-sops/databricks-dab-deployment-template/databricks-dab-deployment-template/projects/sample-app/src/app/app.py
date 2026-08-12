@@ -10,6 +10,7 @@ Demonstrates the two monorepo conventions:
 import os
 import streamlit as st
 from shared_core.transforms import normalize_severity
+from helpers import severity_badge
 
 CATALOG = os.environ["CATALOG"]
 
@@ -17,7 +18,7 @@ st.title("DAB Template Sample App")
 st.write(f"Connected catalog: `{CATALOG}`")
 
 label = st.text_input("Try the shared library: enter a severity label", "HIGH")
-st.write(f"`shared_core.normalize_severity` → **{normalize_severity(label)}**")
+st.write(f"`shared_core.normalize_severity` → **{normalize_severity(label)}** {severity_badge(label)}")
 
 st.caption(
     "This app runs as its own service principal. If a table query fails "
